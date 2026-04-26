@@ -1,0 +1,40 @@
+name: SeaWee CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Check app syntax
+        run: |
+          python -m py_compile app.py
+          python -m py_compile rag_engine.py
+          echo "SeaWee code check passed"
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: docker build -t seawee .
+
+      - name: Docker build success
+        run: echo "SeaWee Docker image built successfully"
