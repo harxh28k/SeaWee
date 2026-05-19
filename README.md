@@ -32,16 +32,6 @@ SeaWee is an AI-powered resume analyzer that helps job seekers optimize their re
 
 ---
 
-## IBM Course Modules Used
-
-| Module | Technology | Feature |
-|---|---|---|
-| GenAI | Groq Llama 3 | Resume analysis, feedback, rewriting |
-| RAG | LangChain + ChromaDB | Market-aware analysis, chat |
-| Agentic AI | Python agent loop | Auto-improvement |
-| DevOps | Docker + GitHub Actions | Deployment pipeline |
-
----
 
 ## Run Locally
 
