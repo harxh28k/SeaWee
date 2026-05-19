@@ -21,15 +21,22 @@ def get_llm():
     )
 
 
+def get_embeddings():
+    """Get HuggingFace embeddings forced to CPU — works on all machines."""
+    return HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2",
+        model_kwargs={"device": "cpu"},
+        encode_kwargs={"normalize_embeddings": True}
+    )
+
+
 def extract_text_from_pdf(pdf_path: str) -> str:
     loader = PyPDFLoader(pdf_path)
     docs = loader.load()
     return "\n\n".join(doc.page_content for doc in docs)
 
+
 # ── MODULE 1 + 2: GenAI + RAG ─────────────────────────────────────────
-# Original chat chain — unchanged from your project
-
-
 def build_qa_chain(pdf_path: str):
     loader = PyPDFLoader(pdf_path)
     docs = loader.load()
@@ -37,7 +44,7 @@ def build_qa_chain(pdf_path: str):
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunks = splitter.split_documents(docs)
 
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = get_embeddings()
     vectorstore = Chroma.from_documents(chunks, embeddings)
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
@@ -166,10 +173,9 @@ IMPROVED_RESUME:
         "improved_text": improved_text
     }
 
+
 # ── ATS Keyword Heatmap ───────────────────────────────────────────────────
-
-
-def extract_keywords(job_description: str) -> dict:
+def extract_keywords(job_description: str) -> list:
     """Extract must-have keywords from JD using LLM."""
     llm = get_llm()
     prompt = f"""Extract the most important technical skills, tools, and keywords from this job description.
@@ -189,12 +195,12 @@ KEYWORDS: keyword1, keyword2, keyword3, keyword4, keyword5, keyword6, keyword7, 
     return keywords
 
 
-def build_heatmap(resume_text: str, keywords: list) -> str:
-    """Highlight matched keywords in green and missing in red in resume text."""
+def build_heatmap(resume_text: str, keywords: list):
+    """Highlight matched keywords in green, list missing ones separately."""
     import html as html_lib
 
     if not keywords or not resume_text:
-        return html_lib.escape(resume_text)
+        return html_lib.escape(resume_text), [], []
 
     resume_lower = resume_text.lower()
     matched = []
@@ -211,19 +217,9 @@ def build_heatmap(resume_text: str, keywords: list) -> str:
 
     # Highlight matched keywords in green
     for kw in matched:
-        import re as re_mod
-        pattern = re_mod.compile(re_mod.escape(kw), re_mod.IGNORECASE)
+        pattern = re.compile(re.escape(kw), re.IGNORECASE)
         highlighted = pattern.sub(
             lambda m: f'<mark style="background:#14532d;color:#4ade80;border-radius:3px;padding:1px 4px;font-weight:600">{m.group()}</mark>',
-            highlighted
-        )
-
-    # Highlight missing keywords in red (only if they appear in JD context)
-    for kw in missing:
-        import re as re_mod
-        pattern = re_mod.compile(re_mod.escape(kw), re_mod.IGNORECASE)
-        highlighted = pattern.sub(
-            lambda m: f'<mark style="background:#450a0a;color:#f87171;border-radius:3px;padding:1px 4px;font-weight:600;text-decoration:line-through">{m.group()}</mark>',
             highlighted
         )
 
