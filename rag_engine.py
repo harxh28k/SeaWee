@@ -1,5 +1,6 @@
 import os
 import re
+import html as html_lib
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_community.document_loaders import PyPDFLoader
@@ -14,9 +15,14 @@ load_dotenv()
 
 
 def get_llm():
+    api_key = (os.getenv("GROQ_API_KEY") or "").strip()
+    if not api_key:
+        raise ValueError(
+            "GROQ_API_KEY is missing. Please set it in your .env file.")
+
     return ChatGroq(
-        model_name="llama-3.3-70b-versatile",
-        groq_api_key=os.getenv("GROQ_API_KEY"),
+        model_name="openai/gpt-oss-20b",
+        groq_api_key=api_key,
         temperature=0.2,
     )
 
@@ -197,8 +203,6 @@ KEYWORDS: keyword1, keyword2, keyword3, keyword4, keyword5, keyword6, keyword7, 
 
 def build_heatmap(resume_text: str, keywords: list):
     """Highlight matched keywords in green, list missing ones separately."""
-    import html as html_lib
-
     if not keywords or not resume_text:
         return html_lib.escape(resume_text), [], []
 
